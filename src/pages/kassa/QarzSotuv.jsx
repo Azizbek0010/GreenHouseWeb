@@ -12,6 +12,22 @@ function money(n)    { return (n || 0).toLocaleString('ru-RU') }
 function num(s)      { return parseInt(String(s).replace(/\s/g, '')) || 0 }
 function fmtInput(s) { return s ? String(s).replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '' }
 
+// Telefon: +998 dan keyingi 9 raqam. Kiritilgandan 998/+ ni tozalaydi, 9 taga cheklaydi.
+function phoneDigits(raw) {
+  let d = String(raw).replace(/\D/g, '')
+  if (d.startsWith('998')) d = d.slice(3)
+  return d.slice(0, 9)
+}
+// 9 raqamni "XX XXX XX XX" ko'rinishida chiqaradi
+function formatUzPhone(d) {
+  const p = []
+  if (d.length > 0) p.push(d.slice(0, 2))
+  if (d.length > 2) p.push(d.slice(2, 5))
+  if (d.length > 5) p.push(d.slice(5, 7))
+  if (d.length > 7) p.push(d.slice(7, 9))
+  return p.join(' ')
+}
+
 // ── Bottom-sheet modal picker ──────────────────────────────────────
 function SelectModal({ options, value, onChange, placeholder = 'Tanlang...' }) {
   const [open, setOpen] = useState(false)
@@ -166,9 +182,9 @@ export default function QarzSotuv() {
       if (!(num(it.qty)  > 0)) return setError('Sonni kiriting')
       if (!(num(it.narx) > 0)) return setError('Narxni kiriting')
     }
-    if (!buyerName.trim())  return setError('Sotib oluvchi ismini kiriting')
-    if (!buyerPhone.trim()) return setError('Telefon raqamini kiriting')
-    if (!flowerPhoto)       return setError('Gul rasmini yuklang')
+    if (!buyerName.trim())     return setError('Sotib oluvchi ismini kiriting')
+    if (buyerPhone.length !== 9) return setError("Telefon raqami to'liq emas: +998 dan keyin 9 ta raqam")
+    if (!flowerPhoto)          return setError('Gul rasmini yuklang')
     if (!buyerPhoto)        return setError('Sotib oluvchi rasmini yuklang')
 
     setError(''); setSaving(true)
@@ -179,7 +195,7 @@ export default function QarzSotuv() {
       const form = new FormData()
       form.append('flowers',     JSON.stringify(flowers))
       form.append('buyerName',   buyerName.trim())
-      form.append('buyerPhone',  buyerPhone.trim())
+      form.append('buyerPhone',  '+998' + buyerPhone)
       form.append('flowerPhoto', flowerPhoto)
       form.append('buyerPhoto',  buyerPhoto)
       await api.postForm('/api/qarz', form)
@@ -248,13 +264,14 @@ export default function QarzSotuv() {
         </div>
         <div className="flex items-center px-4 py-3">
           <Phone size={16} className="text-text-sub mr-2 shrink-0" />
+          <span className="text-ctext text-base font-medium mr-1.5 shrink-0">+998</span>
           <input
             type="tel"
-            inputMode="tel"
-            value={buyerPhone}
-            onChange={e => setBuyerPhone(e.target.value)}
-            placeholder="Telefon raqami"
-            className="flex-1 bg-transparent text-ctext text-base font-medium outline-none"
+            inputMode="numeric"
+            value={formatUzPhone(buyerPhone)}
+            onChange={e => setBuyerPhone(phoneDigits(e.target.value))}
+            placeholder="77 454 55 55"
+            className="flex-1 bg-transparent text-ctext text-base font-medium outline-none tracking-wide"
           />
         </div>
       </div>
