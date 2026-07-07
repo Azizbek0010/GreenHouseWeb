@@ -270,7 +270,7 @@ export default function QarzSotuv() {
             inputMode="numeric"
             value={formatUzPhone(buyerPhone)}
             onChange={e => setBuyerPhone(phoneDigits(e.target.value))}
-            placeholder="77 454 55 55"
+            placeholder="00 000 00 00"
             className="flex-1 bg-transparent text-ctext text-base font-medium outline-none tracking-wide"
           />
         </div>
