@@ -4,3 +4,5 @@ dist/
 .env.docker
 .DS_Store
 *.log
+
+.vercel
