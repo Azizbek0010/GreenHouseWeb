@@ -1,7 +1,7 @@
 import { Plus, Trash2, Plus as PlusIcon } from 'lucide-react'
 
-const SIZES = [50, 60, 70, 80, 90, 100, 110]
-const TYPES = ['Roza', 'Lola', 'Xrizantema', 'Gerbera', 'Boshqa']
+const SIZES = [40, 50, 60, 70, 80, 90, 100, 110]
+const TYPES = ['Гладиатор', 'Пруд ок', 'Баблас', 'Бамбастик', 'Лондонай', 'Жумилия', 'Лидия', 'Лилия фиолетовый', 'Boshqa']
 
 export default function FlowerListEditor({ flowers, onChange, label = 'Gullar' }) {
   const addFlower = () => {

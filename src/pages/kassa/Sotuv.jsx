@@ -5,8 +5,8 @@ import { api } from '../../lib/api'
 import { ErrorMsg } from '../../components/ui'
 import BottomModal from '../../components/BottomModal'
 
-const TYPES = ['Roza', 'Lola', 'Xrizantema', 'Gerbera', 'Gladiolus', 'Pion', 'Boshqa']
-const SIZES = [50, 60, 70, 80, 90, 100, 110]
+const TYPES = ['Гладиатор', 'Пруд ок', 'Баблас', 'Бамбастик', 'Лондонай', 'Жумилия', 'Лидия', 'Лилия фиолетовый', 'Boshqa']
+const SIZES = [40, 50, 60, 70, 80, 90, 100, 110]
 
 function money(n)    { return (n || 0).toLocaleString('ru-RU') }
 function num(s)      { return parseInt(String(s).replace(/\s/g, '')) || 0 }

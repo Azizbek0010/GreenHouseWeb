@@ -5,9 +5,9 @@ import { api } from '../../lib/api'
 import { ErrorMsg } from '../../components/ui'
 import BottomModal from '../../components/BottomModal'
 
-const TYPES    = ['Roza', 'Lola', 'Xrizantema', 'Gerbera', 'Gladiolus', 'Pion', 'Boshqa']
+const TYPES    = ['Гладиатор', 'Пруд ок', 'Баблас', 'Бамбастик', 'Лондонай', 'Жумилия', 'Лидия', 'Лилия фиолетовый', 'Boshqa']
 const fmtInput = (s) => s ? String(s).replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''
-const SIZES   = [50, 60, 70, 80, 90, 100, 110]
+const SIZES   = [40, 50, 60, 70, 80, 90, 100, 110]
 const SABABLAR = [
   { key: "so'lgan",  label: "So'lgan",  emoji: '🥀' },
   { key: 'nuqsonli', label: 'Nuqsonli', emoji: '⚠️' },
