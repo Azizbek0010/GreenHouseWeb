@@ -1,25 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ImageOff, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Clock } from 'lucide-react'
 import { api } from '../../lib/api'
-import { API_URL } from '../../lib/config'
 import { Spinner, ErrorMsg } from '../../components/ui'
 
 function money(n) { return (n || 0).toLocaleString('ru-RU') }
-
-function SafeImg({ src, className }) {
-  const [err, setErr] = useState(false)
-  const fullSrc = src ? (src.startsWith('http') ? src : `${API_URL}${src}`) : null
-  if (!fullSrc || err) {
-    return (
-      <div className={`${className} flex flex-col items-center justify-center gap-2 bg-cbg rounded-2xl`}>
-        <ImageOff size={32} className="text-cgray" />
-        <span className="text-sm text-cgray">Rasm yo'q</span>
-      </div>
-    )
-  }
-  return <img src={fullSrc} className={className} alt="" onError={() => setErr(true)} />
-}
 
 function StatusBadge({ status }) {
   if (status === 'approved') return (
@@ -88,9 +73,6 @@ export default function AtxodDetail() {
               ))}
             </div>
           )}
-
-          <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Rasm</p>
-          <SafeImg src={ax?.photo} className="w-full object-cover rounded-2xl" />
         </>
       )}
     </div>

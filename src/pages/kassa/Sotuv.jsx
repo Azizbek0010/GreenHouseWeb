@@ -135,7 +135,6 @@ const newItem = () => ({ id: Date.now() + Math.random(), type: '', razmer: null,
 export default function Sotuv() {
   const navigate = useNavigate()
   const [items, setItems]   = useState([newItem()])
-  const [photo, setPhoto]   = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
 
@@ -155,16 +154,13 @@ export default function Sotuv() {
     }
     setError(''); setSaving(true)
     try {
-      await Promise.all(items.map(it => {
-        const form = new FormData()
-        form.append('flowerType',   it.type)
-        form.append('razmer',       String(it.razmer))
-        form.append('qty',          String(num(it.qty)))
-        form.append('holat',        it.holat)
-        form.append('pricePerUnit', String(num(it.narx)))
-        if (photo) form.append('photo', photo)
-        return api.postForm('/api/sotuv', form)
-      }))
+      await Promise.all(items.map(it => api.post('/api/sotuv', {
+        flowerType:   it.type,
+        razmer:       it.razmer,
+        qty:          num(it.qty),
+        holat:        it.holat,
+        pricePerUnit: num(it.narx),
+      })))
       navigate('/kassa')
     } catch (e) {
       setError(e.message)
@@ -232,17 +228,6 @@ export default function Sotuv() {
           <p className="text-2xl font-bold text-primary">{money(total)} <span className="text-base font-medium">s</span></p>
         </div>
       )}
-
-      {/* Photo */}
-      <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Rasm (ixtiyoriy)</p>
-      <label className="flex flex-col items-center justify-center h-32 rounded-2xl border-2 border-dashed border-cborder bg-ccard hover:border-primary cursor-pointer transition-colors mb-5 overflow-hidden">
-        {photo ? (
-          <img src={URL.createObjectURL(photo)} className="h-full w-full object-cover" alt="" />
-        ) : (
-          <p className="text-text-sub text-sm">Rasm yuklash uchun bosing</p>
-        )}
-        <input type="file" accept="image/*" className="hidden" onChange={e => setPhoto(e.target.files[0] || null)} />
-      </label>
 
       <button
         onClick={onSave}

@@ -145,7 +145,6 @@ export default function Qabul() {
   const id = params.get('id')
 
   const [flowers, setFlowers] = useState([newFlower()])
-  const [photo, setPhoto]     = useState(null)
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
 
@@ -159,7 +158,6 @@ export default function Qabul() {
     if (flowers.some(f => !f.type))          return setError('Har bir gulning turini tanlang')
     if (flowers.some(f => f.sizes.length === 0)) return setError("Har bir gulda kamida bitta o'lcham bo'lishi kerak")
     if (flowers.some(f => f.sizes.some(s => !(parseInt(s.qty) > 0)))) return setError('Sonlarni to\'liq kiriting')
-    if (!photo)                              return setError('Rasm majburiy')
 
     // API uchun id'ni olib tashlaymiz
     const payload = flowers.map(({ type, sizes }) => ({
@@ -169,10 +167,7 @@ export default function Qabul() {
 
     setError(''); setSaving(true)
     try {
-      const form = new FormData()
-      form.append('photo', photo)
-      form.append('flowers', JSON.stringify(payload))
-      await api.postForm(`/api/partiya/${id}/receive`, form)
+      await api.post(`/api/partiya/${id}/receive`, { flowers: payload })
       navigate('/kassa')
     } catch (e) {
       setError(e.message)
@@ -230,22 +225,6 @@ export default function Qabul() {
           <p className="text-2xl font-bold text-primary">{totalQty} <span className="text-base font-medium">ta</span></p>
         </div>
       )}
-
-      {/* Photo */}
-      <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Umumiy rasm (majburiy)</p>
-      <label className={`flex flex-col items-center justify-center h-40 rounded-2xl border-2 border-dashed cursor-pointer transition-colors mb-5 overflow-hidden ${
-        photo ? 'border-primary' : 'border-cborder bg-ccard hover:border-primary'
-      }`}>
-        {photo ? (
-          <img src={URL.createObjectURL(photo)} className="h-full w-full object-cover" alt="" />
-        ) : (
-          <div className="text-center">
-            <p className="text-text-sub text-sm">Rasm yuklash uchun bosing</p>
-            <p className="text-xs text-cgray mt-1">JPG, PNG — majburiy</p>
-          </div>
-        )}
-        <input type="file" accept="image/*" className="hidden" onChange={e => setPhoto(e.target.files[0] || null)} />
-      </label>
 
       <button
         onClick={onConfirm}

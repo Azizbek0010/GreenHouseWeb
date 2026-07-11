@@ -141,28 +141,12 @@ function FlowerRow({ item, onChange, onRemove, canRemove }) {
   )
 }
 
-// ── Photo picker ───────────────────────────────────────────────────
-function PhotoPicker({ photo, onPick, label }) {
-  return (
-    <label className="flex flex-col items-center justify-center h-32 rounded-2xl border-2 border-dashed border-cborder bg-ccard hover:border-primary cursor-pointer transition-colors overflow-hidden">
-      {photo ? (
-        <img src={URL.createObjectURL(photo)} className="h-full w-full object-cover" alt="" />
-      ) : (
-        <p className="text-text-sub text-sm text-center px-2">{label}</p>
-      )}
-      <input type="file" accept="image/*" className="hidden" onChange={e => onPick(e.target.files[0] || null)} />
-    </label>
-  )
-}
-
 // ── Main ──────────────────────────────────────────────────────────
 const newItem = () => ({ id: Date.now() + Math.random(), type: '', razmer: null, qty: '', narx: '' })
 
 export default function QarzSotuv() {
   const navigate = useNavigate()
   const [items, setItems]         = useState([newItem()])
-  const [flowerPhoto, setFlowerPhoto] = useState(null)
-  const [buyerPhoto, setBuyerPhoto]   = useState(null)
   const [buyerName, setBuyerName]     = useState('')
   const [buyerPhone, setBuyerPhone]   = useState('')
   const [saving, setSaving] = useState(false)
@@ -184,21 +168,17 @@ export default function QarzSotuv() {
     }
     if (!buyerName.trim())     return setError('Sotib oluvchi ismini kiriting')
     if (buyerPhone.length !== 9) return setError("Telefon raqami to'liq emas: +998 dan keyin 9 ta raqam")
-    if (!flowerPhoto)          return setError('Gul rasmini yuklang')
-    if (!buyerPhoto)        return setError('Sotib oluvchi rasmini yuklang')
 
     setError(''); setSaving(true)
     try {
       const flowers = items.map(it => ({
         type: it.type, razmer: it.razmer, qty: num(it.qty), pricePerUnit: num(it.narx),
       }))
-      const form = new FormData()
-      form.append('flowers',     JSON.stringify(flowers))
-      form.append('buyerName',   buyerName.trim())
-      form.append('buyerPhone',  '+998' + buyerPhone)
-      form.append('flowerPhoto', flowerPhoto)
-      form.append('buyerPhoto',  buyerPhoto)
-      await api.postForm('/api/qarz', form)
+      await api.post('/api/qarz', {
+        flowers,
+        buyerName:  buyerName.trim(),
+        buyerPhone: '+998' + buyerPhone,
+      })
       navigate('/kassa/tarix')
     } catch (e) {
       setError(e.message)
@@ -273,18 +253,6 @@ export default function QarzSotuv() {
             placeholder="00 000 00 00"
             className="flex-1 bg-transparent text-ctext text-base font-medium outline-none tracking-wide"
           />
-        </div>
-      </div>
-
-      {/* Photos */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        <div>
-          <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Gul rasmi</p>
-          <PhotoPicker photo={flowerPhoto} onPick={setFlowerPhoto} label="Gul rasmini yuklang" />
-        </div>
-        <div>
-          <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Sotib oluvchi rasmi</p>
-          <PhotoPicker photo={buyerPhoto} onPick={setBuyerPhoto} label="Odam rasmini yuklang" />
         </div>
       </div>
 

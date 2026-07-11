@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ShoppingCart, Trash2, Lock, HandCoins, User, Phone, Check } from 'lucide-react'
 import { api } from '../../lib/api'
-import { Spinner, EmptyState, ErrorMsg, SafeImg } from '../../components/ui'
+import { Spinner, EmptyState, ErrorMsg } from '../../components/ui'
 import BottomModal from '../../components/BottomModal'
 
 const UZ_MONTHS = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentyabr','oktyabr','noyabr','dekabr']
@@ -167,18 +167,6 @@ function QarzCard({ q, onPay }) {
             </div>
           </div>
         )}
-
-        {/* Photos */}
-        <div className="grid grid-cols-2 gap-2 mt-3">
-          <div>
-            <p className="text-[10px] text-text-sub mb-1">Gul</p>
-            <SafeImg src={q.flowerPhoto} className="h-28 w-full rounded-xl" />
-          </div>
-          <div>
-            <p className="text-[10px] text-text-sub mb-1">Sotib oluvchi</p>
-            <SafeImg src={q.buyer?.photo} className="h-28 w-full rounded-xl" />
-          </div>
-        </div>
       </div>
 
       {!q.isPaid && (
@@ -318,7 +306,6 @@ export default function KassaTarix() {
                             <p className="text-xs text-text-sub">so'm</p>
                           </div>
                         </div>
-                        <SafeImg src={it.photo} className="mt-3 h-36 w-full rounded-xl" />
                       </div>
                     ) : (
                       <div key={it._id} className="p-4">
@@ -335,10 +322,6 @@ export default function KassaTarix() {
                             <p className="text-base font-bold text-cgreen">{money(it.totalPrice)}</p>
                             <p className="text-xs text-text-sub">so'm</p>
                           </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 mt-3">
-                          <SafeImg src={it.flowerPhoto} className="h-28 w-full rounded-xl" />
-                          <SafeImg src={it.buyer?.photo} className="h-28 w-full rounded-xl" />
                         </div>
                       </div>
                     ))}
@@ -411,7 +394,6 @@ export default function KassaTarix() {
                             <p className="text-xs text-text-sub/60 mt-0.5">{soat(ax.createdAt)}</p>
                           </div>
                         </div>
-                        <SafeImg src={ax.photo} className="mt-3 h-36 w-full rounded-xl" />
                         {ax.adminNote && (
                           <div className="mt-2 px-3 py-2 bg-cbg rounded-xl">
                             <p className="text-xs text-text-sub">Admin izohi: <span className="text-ctext font-medium">{ax.adminNote}</span></p>

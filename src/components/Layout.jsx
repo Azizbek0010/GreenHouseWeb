@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Package, ShoppingCart, BarChart2,
@@ -7,7 +7,6 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { useTheme } from '../lib/theme'
-import { API_URL } from '../lib/config'
 
 const NAV = {
   admin: [
@@ -34,25 +33,8 @@ const NAV = {
 
 const ROLE_LABEL = { admin: 'Administrator', teplitsa: 'Teplitsa', kassa: 'Kassa' }
 
-// Avatar: agar rasm yuklanmasa — harf ko'rsatadi
 function Avatar({ user, size = 'sm' }) {
-  const src = user?.avatar ? `${API_URL}${user.avatar}` : null
-  const [err, setErr] = useState(false)
-  // avatar o'zgarganda xato holatini qayta boshlash
-  useEffect(() => { setErr(false) }, [src])
-
   const cls = size === 'sm' ? 'w-8 h-8 text-sm' : 'w-10 h-10 text-base'
-
-  if (src && !err) {
-    return (
-      <img
-        src={src}
-        className={`${cls} rounded-full object-cover shrink-0`}
-        alt=""
-        onError={() => setErr(true)}
-      />
-    )
-  }
   return (
     <div className={`${cls} rounded-full bg-primary flex items-center justify-center text-white font-bold shrink-0`}>
       {(user?.name || '?').charAt(0).toUpperCase()}

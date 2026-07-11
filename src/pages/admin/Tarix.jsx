@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ShoppingCart, Trash2, Package, RefreshCw, ChevronDown, ChevronUp, HandCoins, Phone } from 'lucide-react'
 import { api } from '../../lib/api'
-import { API_URL } from '../../lib/config'
-import { Badge, Spinner, EmptyState, ErrorMsg, SafeImg } from '../../components/ui'
+import { Badge, Spinner, EmptyState, ErrorMsg } from '../../components/ui'
 
 // ── Helpers ──────────────────────────────────────────────────────────
 const UZ_MONTHS = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentyabr','oktyabr','noyabr','dekabr']
@@ -111,7 +110,6 @@ function SotuvlarTab({ list }) {
                           <p className="text-xs text-text-sub">so'm</p>
                         </div>
                       </div>
-                      <SafeImg src={sv.photo} className="h-40 w-full object-cover rounded-xl" />
                     </div>
                   </button>
                 ))}
@@ -178,7 +176,6 @@ function AtxodlarTab({ list }) {
                           <p className="text-xs text-text-sub">Admin izohi: <span className="text-ctext font-medium">{a.adminNote}</span></p>
                         </div>
                       )}
-                      <SafeImg src={a.photo} className="mt-3 h-40 w-full object-cover rounded-xl" />
                     </div>
                   </button>
                 ))}
@@ -238,17 +235,6 @@ function QarzlarTab({ list, sum }) {
               </div>
             </div>
           )}
-
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            <div>
-              <p className="text-[10px] font-semibold text-text-sub uppercase tracking-wider mb-1">Gul</p>
-              <SafeImg src={q.flowerPhoto} className="h-32 w-full object-cover rounded-xl" />
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-text-sub uppercase tracking-wider mb-1">Sotib oluvchi</p>
-              <SafeImg src={q.buyer?.photo} className="h-32 w-full object-cover rounded-xl" />
-            </div>
-          </div>
         </div>
       </div>
     )
@@ -313,7 +299,6 @@ function summarize(flowers = []) {
 function PartiyaCard({ p }) {
   const navigate = useNavigate()
   const [expanded, setExpanded] = useState(false)
-  const imgSrc = src => src ? (src.startsWith('http') ? src : `${API_URL}${src}`) : null
 
   return (
     <div className="bg-ccard border border-cborder rounded-2xl overflow-hidden hover:border-primary transition-colors cursor-pointer"
@@ -327,26 +312,6 @@ function PartiyaCard({ p }) {
         <p className="text-sm text-text-sub">{p.teplitsa?.name || 'Teplitsa'} → {p.kassa?.name || 'Kassa'}</p>
         <p className="text-xs text-text-sub mt-0.5">{summarize(p.sent)}</p>
         <p className="text-xs text-text-sub/60 mt-1">{soat(p.createdAt)}</p>
-
-        {/* Два фото рядом */}
-        {(p.sentPhoto || p.photo) && (
-          <div className={`mt-3 grid gap-2 ${p.sentPhoto && p.photo ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
-            {p.sentPhoto && (
-              <div>
-                <p className="text-[10px] font-semibold text-text-sub uppercase tracking-wider mb-1">Teplitsa yubordi</p>
-                <img src={imgSrc(p.sentPhoto)} className="w-full h-36 object-cover rounded-xl" alt=""
-                  onError={e => { e.target.style.display = 'none' }} />
-              </div>
-            )}
-            {p.photo && (
-              <div>
-                <p className="text-[10px] font-semibold text-text-sub uppercase tracking-wider mb-1">Kassa qabul qildi</p>
-                <img src={imgSrc(p.photo)} className="w-full h-36 object-cover rounded-xl" alt=""
-                  onError={e => { e.target.style.display = 'none' }} />
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Развернуть детали */}
         <button onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}

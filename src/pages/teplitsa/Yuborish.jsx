@@ -173,7 +173,6 @@ export default function PartiyaYuborish() {
   const [kassalar, setKassalar] = useState([])
   const [kassaId, setKassaId]   = useState(null)
   const [flowers, setFlowers]   = useState([newFlower()])
-  const [photo, setPhoto]       = useState(null)
   const [sending, setSending]   = useState(false)
   const [error, setError]       = useState('')
 
@@ -194,7 +193,6 @@ export default function PartiyaYuborish() {
     if (flowers.some(f => !f.type))       return setError('Har bir gulning turini tanlang')
     if (flowers.some(f => f.sizes.length === 0)) return setError("Har bir gulda kamida bitta o'lcham bo'lishi kerak")
     if (flowers.some(f => f.sizes.some(s => !(parseInt(s.qty) > 0)))) return setError("Sonlarni to'liq kiriting")
-    if (!photo)                           return setError('Rasm majburiy')
 
     const payload = flowers.map(({ type, sizes }) => ({
       type,
@@ -203,11 +201,7 @@ export default function PartiyaYuborish() {
 
     setError(''); setSending(true)
     try {
-      const form = new FormData()
-      form.append('kassaId', kassaId)
-      form.append('flowers', JSON.stringify(payload))
-      form.append('photo', photo)
-      await api.postForm('/api/partiya', form)
+      await api.post('/api/partiya', { kassaId, flowers: payload })
       navigate('/teplitsa')
     } catch (e) {
       setError(e.message)
@@ -267,22 +261,6 @@ export default function PartiyaYuborish() {
           <p className="text-2xl font-bold text-primary">{totalQty} <span className="text-base font-medium">ta</span></p>
         </div>
       )}
-
-      {/* Rasm */}
-      <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Rasm (majburiy)</p>
-      <label className={`flex flex-col items-center justify-center h-40 rounded-2xl border-2 border-dashed cursor-pointer transition-colors mb-5 overflow-hidden ${
-        photo ? 'border-primary' : 'border-cborder bg-ccard hover:border-primary'
-      }`}>
-        {photo ? (
-          <img src={URL.createObjectURL(photo)} className="h-full w-full object-cover" alt="" />
-        ) : (
-          <div className="text-center px-4">
-            <p className="text-text-sub text-sm">Yuborilayotgan gul rasmini yuklang</p>
-            <p className="text-xs text-cgray mt-1">JPG, PNG — majburiy</p>
-          </div>
-        )}
-        <input type="file" accept="image/*" className="hidden" onChange={e => setPhoto(e.target.files[0] || null)} />
-      </label>
 
       <button
         onClick={onSend}

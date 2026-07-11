@@ -64,7 +64,6 @@ export default function KassaAtxod() {
   const [qty, setQty]       = useState('')
   const [sabab, setSabab]   = useState('')
   const [qiymat, setQiymat] = useState('')
-  const [photo, setPhoto]   = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
 
@@ -76,18 +75,16 @@ export default function KassaAtxod() {
     if (!q || q <= 0)       return setError("Soni musbat son bo'lishi kerak")
     if (!qiymatN || qiymatN <= 0) return setError("Qiymatni kiriting (so'm)")
     if (!sabab)             return setError('Sababni tanlang')
-    if (!photo)             return setError('Rasm majburiy')
 
     setError(''); setSaving(true)
     try {
-      const form = new FormData()
-      form.append('flowerType', type)
-      form.append('razmer', String(razmer))
-      form.append('qty', String(q))
-      form.append('sabab', sabab)
-      form.append('qiymat', String(parseInt(qiymat.replace(/\s/g, ''))))
-      form.append('photo', photo)
-      await api.postForm('/api/atxod', form)
+      await api.post('/api/atxod', {
+        flowerType: type,
+        razmer,
+        qty: q,
+        sabab,
+        qiymat: qiymatN,
+      })
       navigate('/kassa')
     } catch (e) {
       setError(e.message)
@@ -106,8 +103,8 @@ export default function KassaAtxod() {
       <div className="flex items-start gap-3 bg-blue-bg border-l-4 border-primary rounded-2xl p-4 mb-5">
         <Info size={18} className="text-primary mt-0.5 shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-primary">Rasm majburiy</p>
-          <p className="text-xs text-primary/70 mt-0.5">Atxod admin tekshiruvidan o'tadi. Gul rasmi shart.</p>
+          <p className="text-sm font-semibold text-primary">Admin tekshiruvi</p>
+          <p className="text-xs text-primary/70 mt-0.5">Atxod admin tekshiruvidan o'tadi.</p>
         </div>
       </div>
 
@@ -176,20 +173,6 @@ export default function KassaAtxod() {
           placeholder="Sababni tanlang"
         />
       </div>
-
-      {/* Photo */}
-      <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Rasm (majburiy)</p>
-      <label className="flex flex-col items-center justify-center h-40 rounded-2xl border-2 border-dashed cursor-pointer transition-colors mb-5 overflow-hidden border-cborder bg-ccard hover:border-primary">
-        {photo ? (
-          <img src={URL.createObjectURL(photo)} className="h-full w-full object-cover" alt="" />
-        ) : (
-          <div className="text-center">
-            <p className="text-text-sub text-sm">Rasm yuklash uchun bosing</p>
-            <p className="text-xs text-cgray mt-1">JPG, PNG — majburiy</p>
-          </div>
-        )}
-        <input type="file" accept="image/*" className="hidden" onChange={e => setPhoto(e.target.files[0] || null)} />
-      </label>
 
       <button
         onClick={onSave}
