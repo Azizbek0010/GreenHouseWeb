@@ -1,19 +1,22 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trash2, Info, Check, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Trash2, Info, Check, Plus, ChevronDown } from 'lucide-react'
 import { api } from '../../lib/api'
 import { ErrorMsg } from '../../components/ui'
 import BottomModal from '../../components/BottomModal'
 
 const TYPES    = ['Гладиатор', 'Пруд ок', 'Баблас', 'Бамбастик', 'Лондонай', 'Жумилия', 'Лидия', 'Лилия фиолетовый', 'Boshqa']
-const fmtInput = (s) => s ? String(s).replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''
-const SIZES   = [40, 50, 60, 70, 80, 90, 100, 110]
+const SIZES    = [40, 50, 60, 70, 80, 90, 100, 110]
 const SABABLAR = [
   { key: "so'lgan",  label: "So'lgan",  emoji: '🥀' },
   { key: 'nuqsonli', label: 'Nuqsonli', emoji: '⚠️' },
   { key: 'singan',   label: 'Singan',   emoji: '💔' },
   { key: 'boshqa',   label: 'Boshqa',   emoji: '📦' },
 ]
+
+function money(n)    { return (n || 0).toLocaleString('ru-RU') }
+function num(s)      { return parseInt(String(s).replace(/\s/g, '')) || 0 }
+function fmtInput(s) { return s ? String(s).replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '' }
 
 // ── Bottom-sheet modal picker ──────────────────────────────────────
 function SelectModal({ options, value, onChange, placeholder = 'Tanlang...' }) {
@@ -57,34 +60,128 @@ function SelectModal({ options, value, onChange, placeholder = 'Tanlang...' }) {
   )
 }
 
+// ── One flower line item ──────────────────────────────────────────
+function FlowerRow({ item, onChange, onRemove, canRemove }) {
+  const update = (field, val) => onChange({ ...item, [field]: val })
+
+  return (
+    <div className="bg-ccard border border-cborder rounded-2xl overflow-hidden mb-3">
+      <div className="flex items-center border-b border-separator">
+        <div className="flex-1">
+          <SelectModal
+            options={TYPES}
+            value={item.type}
+            onChange={v => update('type', v)}
+            placeholder="Gul turini tanlang"
+          />
+        </div>
+        {canRemove && (
+          <button
+            onClick={onRemove}
+            className="w-12 flex items-center justify-center text-cred hover:bg-red-bg transition-colors self-stretch"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
+
+      <div className="px-4 py-3 border-b border-separator">
+        <p className="text-xs text-text-sub mb-2 font-medium">Razmer</p>
+        <div className="flex flex-wrap gap-1.5">
+          {SIZES.map(z => (
+            <button
+              key={z}
+              onClick={() => update('razmer', z)}
+              className={`px-3 h-8 rounded-lg text-sm font-medium transition-colors border ${
+                item.razmer === z
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-cbg text-ctext border-cborder hover:border-primary'
+              }`}
+            >
+              {z}sm
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center px-4 py-3 border-b border-separator">
+        <span className="flex-1 text-sm text-ctext">Soni</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={item.qty}
+          onChange={e => update('qty', e.target.value.replace(/\D/g, ''))}
+          placeholder="0"
+          className="w-20 text-right bg-transparent text-ctext text-base font-semibold outline-none"
+        />
+        <span className="text-text-sub ml-1.5 text-sm">ta</span>
+      </div>
+      <div className="flex items-center px-4 py-3 border-b border-separator">
+        <span className="flex-1 text-sm text-ctext">Qiymat (dona)</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={fmtInput(item.qiymat)}
+          onChange={e => update('qiymat', e.target.value.replace(/[\s\D]/g, ''))}
+          placeholder="0"
+          className="w-28 text-right bg-transparent text-ctext text-base font-semibold outline-none"
+        />
+        <span className="text-text-sub ml-1.5 text-sm">so'm</span>
+      </div>
+
+      <div className="border-b border-separator">
+        <SelectModal
+          options={SABABLAR}
+          value={item.sabab}
+          onChange={v => update('sabab', v)}
+          placeholder="Sababni tanlang"
+        />
+      </div>
+
+      {num(item.qty) > 0 && num(item.qiymat) > 0 && (
+        <div className="px-4 py-2.5 bg-red-bg border-t border-separator flex items-center justify-between">
+          <span className="text-xs text-cred">{num(item.qty)} × {money(num(item.qiymat))}</span>
+          <span className="text-sm font-bold text-cred">{money(num(item.qty) * num(item.qiymat))} so'm</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main ──────────────────────────────────────────────────────────
+const newItem = () => ({ id: Date.now() + Math.random(), type: '', razmer: null, qty: '', qiymat: '', sabab: '' })
+
 export default function KassaAtxod() {
   const navigate = useNavigate()
-  const [type, setType]     = useState('')
-  const [razmer, setRazmer] = useState(null)
-  const [qty, setQty]       = useState('')
-  const [sabab, setSabab]   = useState('')
-  const [qiymat, setQiymat] = useState('')
+  const [items, setItems]   = useState([newItem()])
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
 
+  const updateItem = (id, updated) => setItems(prev => prev.map(it => it.id === id ? updated : it))
+  const removeItem = (id)          => setItems(prev => prev.filter(it => it.id !== id))
+  const addItem    = ()            => setItems(prev => [...prev, newItem()])
+
+  const total    = items.reduce((s, it) => s + num(it.qty) * num(it.qiymat), 0)
+  const totalQty = items.reduce((s, it) => s + num(it.qty), 0)
+
   const onSave = async () => {
-    const q = parseInt(qty)
-    const qiymatN = parseInt(qiymat.replace(/\s/g, ''))
-    if (!type)              return setError('Gul turini tanlang')
-    if (!razmer)            return setError('Razmerni tanlang')
-    if (!q || q <= 0)       return setError("Soni musbat son bo'lishi kerak")
-    if (!qiymatN || qiymatN <= 0) return setError("Qiymatni kiriting (so'm)")
-    if (!sabab)             return setError('Sababni tanlang')
+    for (const it of items) {
+      if (!it.type)               return setError('Gul turini tanlang')
+      if (!it.razmer)             return setError('Razmerni tanlang')
+      if (!(num(it.qty) > 0))     return setError("Soni musbat son bo'lishi kerak")
+      if (!(num(it.qiymat) > 0))  return setError("Qiymatni kiriting (so'm)")
+      if (!it.sabab)              return setError('Sababni tanlang')
+    }
 
     setError(''); setSaving(true)
     try {
-      await api.post('/api/atxod', {
-        flowerType: type,
-        razmer,
-        qty: q,
-        sabab,
-        qiymat: qiymatN,
-      })
+      await Promise.all(items.map(it => api.post('/api/atxod', {
+        flowerType: it.type,
+        razmer:     it.razmer,
+        qty:        num(it.qty),
+        sabab:      it.sabab,
+        qiymat:     num(it.qiymat),
+      })))
       navigate('/kassa')
     } catch (e) {
       setError(e.message)
@@ -98,7 +195,8 @@ export default function KassaAtxod() {
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-primary text-sm font-medium mb-5 hover:underline">
         <ArrowLeft size={16} /> Ortga
       </button>
-      <h1 className="text-2xl font-bold text-ctext tracking-tight mb-5">Atxod kiritish</h1>
+      <h1 className="text-2xl font-bold text-ctext tracking-tight mb-1">Atxod kiritish</h1>
+      <p className="text-sm text-text-sub mb-5">Bir kiritishda bir nechta gul turini qo'shing</p>
 
       <div className="flex items-start gap-3 bg-blue-bg border-l-4 border-primary rounded-2xl p-4 mb-5">
         <Info size={18} className="text-primary mt-0.5 shrink-0" />
@@ -110,69 +208,37 @@ export default function KassaAtxod() {
 
       <ErrorMsg msg={error} onClose={() => setError('')} />
 
-      {/* Gul turi */}
-      <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Gul ma'lumotlari</p>
-      <div className="bg-ccard border border-cborder rounded-2xl overflow-hidden mb-4">
-        <div className="border-b border-separator">
-          <SelectModal
-            options={TYPES}
-            value={type}
-            onChange={setType}
-            placeholder="Gul turini tanlang"
-          />
-        </div>
-        <div className="flex items-center px-4 py-3.5 border-b border-separator">
-          <span className="flex-1 text-base text-ctext">Soni</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={qty}
-            onChange={e => setQty(e.target.value.replace(/\D/g, ''))}
-            placeholder="0"
-            className="w-24 text-right bg-transparent text-ctext text-base font-semibold outline-none"
-          />
-          <span className="text-text-sub ml-2 text-sm">ta</span>
-        </div>
-        <div className="flex items-center px-4 py-3.5">
-          <span className="flex-1 text-base text-ctext">Qiymat (dona)</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={fmtInput(qiymat)}
-            onChange={e => setQiymat(e.target.value.replace(/[\s\D]/g, ''))}
-            placeholder="0"
-            className="w-28 text-right bg-transparent text-ctext text-base font-semibold outline-none"
-          />
-          <span className="text-text-sub ml-2 text-sm">so'm</span>
-        </div>
-      </div>
+      {/* Flower items */}
+      <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Yo'qolgan gullar</p>
 
-      {/* Razmer */}
-      <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Razmer</p>
-      <div className="flex flex-wrap gap-2 mb-4">
-        {SIZES.map(z => (
-          <button
-            key={z}
-            onClick={() => setRazmer(z)}
-            className={`px-4 h-10 rounded-xl text-sm font-medium transition-colors border ${
-              razmer === z ? 'bg-primary text-white border-primary' : 'bg-ccard text-ctext border-cborder hover:border-primary'
-            }`}
-          >
-            {z} sm
-          </button>
-        ))}
-      </div>
-
-      {/* Sabab */}
-      <p className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2">Atxod sababi</p>
-      <div className="bg-ccard border border-cborder rounded-2xl overflow-hidden mb-4">
-        <SelectModal
-          options={SABABLAR}
-          value={sabab}
-          onChange={setSabab}
-          placeholder="Sababni tanlang"
+      {items.map(item => (
+        <FlowerRow
+          key={item.id}
+          item={item}
+          onChange={updated => updateItem(item.id, updated)}
+          onRemove={() => removeItem(item.id)}
+          canRemove={items.length > 1}
         />
-      </div>
+      ))}
+
+      <button
+        onClick={addItem}
+        className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-dashed border-cborder text-text-sub text-sm font-semibold hover:border-primary hover:text-primary transition-colors mb-5"
+      >
+        <Plus size={16} />
+        Gul qo'shish
+      </button>
+
+      {/* Total */}
+      {total > 0 && (
+        <div className="bg-red-bg border border-cred/20 rounded-2xl p-4 flex items-center justify-between mb-5">
+          <div>
+            <p className="text-sm text-cred font-semibold">Jami yo'qotish</p>
+            <p className="text-xs text-cred/70 mt-0.5">{items.length} tur · {totalQty} ta gul</p>
+          </div>
+          <p className="text-2xl font-bold text-cred">{money(total)} <span className="text-base font-medium">s</span></p>
+        </div>
+      )}
 
       <button
         onClick={onSave}
