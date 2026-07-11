@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ShoppingCart, Trash2, Lock, HandCoins, User, Phone, Check } from 'lucide-react'
+import { ShoppingCart, Trash2, Lock, HandCoins, User, Phone, Check, Search } from 'lucide-react'
 import { api } from '../../lib/api'
 import { Spinner, EmptyState, ErrorMsg } from '../../components/ui'
 import BottomModal from '../../components/BottomModal'
@@ -11,6 +11,12 @@ function num(s)   { return parseInt(String(s).replace(/\s/g, '')) || 0 }
 function fmtInput(s) { return s ? String(s).replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '' }
 function soat(d) {
   return new Date(d).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+}
+function kunOldin(d) {
+  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000)
+  if (days <= 0) return 'Bugun'
+  if (days === 1) return 'Kecha'
+  return `${days} kun oldin`
 }
 function dateKey(d) {
   const dt = new Date(d)
@@ -39,6 +45,53 @@ function groupByDate(items, dateOf = it => it.createdAt) {
 }
 function flowersSummary(flowers = []) {
   return flowers.map(f => `${f.type} ${f.razmer}sm · ${f.qty} ta`).join(', ')
+}
+
+// Qarzlarni ism/telefon bo'yicha qidirish + saralash
+function filterSortQarz(list, search, sort) {
+  const q = search.trim().toLowerCase()
+  const qDigits = search.replace(/\D/g, '')
+  let filtered = list
+  if (q) {
+    filtered = list.filter(x => {
+      const name  = (x.buyer?.name  || '').toLowerCase()
+      const phone = (x.buyer?.phone || '')
+      return name.includes(q) || (qDigits && phone.replace(/\D/g, '').includes(qDigits))
+    })
+  }
+  const sorted = [...filtered]
+  const qoldiq = x => x.totalPrice - x.paidAmount
+  if (sort === 'eski')      sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  else if (sort === 'kop')  sorted.sort((a, b) => qoldiq(b) - qoldiq(a))
+  else if (sort === 'kam')  sorted.sort((a, b) => qoldiq(a) - qoldiq(b))
+  else                      sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // yangi (default)
+  return sorted
+}
+
+function QarzSearchSort({ search, onSearch, sort, onSort }) {
+  return (
+    <div className="flex gap-2 mb-4">
+      <div className="flex-1 flex items-center gap-2 bg-ccard border border-cborder rounded-xl px-3 h-10">
+        <Search size={14} className="text-text-sub shrink-0" />
+        <input
+          value={search}
+          onChange={e => onSearch(e.target.value)}
+          placeholder="Ism yoki telefon bo'yicha qidirish"
+          className="flex-1 bg-transparent text-sm text-ctext outline-none min-w-0"
+        />
+      </div>
+      <select
+        value={sort}
+        onChange={e => onSort(e.target.value)}
+        className="h-10 px-2.5 rounded-xl border border-cborder bg-ccard text-xs text-ctext outline-none shrink-0"
+      >
+        <option value="yangi">Yangi qarzlar</option>
+        <option value="eski">Eski (uzoq kutilmoqda)</option>
+        <option value="kop">Ko'p qarzdor</option>
+        <option value="kam">Kam qarzdor</option>
+      </select>
+    </div>
+  )
 }
 
 const SABAB_LABEL = { "so'lgan": "So'lgan", nuqsonli: 'Nuqsonli', singan: 'Singan', boshqa: 'Boshqa' }
@@ -147,7 +200,9 @@ function QarzCard({ q, onPay }) {
               <Phone size={11} /> {q.buyer?.phone}
             </a>
             <p className="text-xs text-text-sub mt-1">{flowersSummary(q.flowers)}</p>
-            <p className="text-xs text-text-sub/60 mt-0.5">{soat(q.createdAt)}</p>
+            <p className="text-xs text-text-sub/60 mt-0.5">
+              {soat(q.createdAt)}{!q.isPaid ? ` · ${kunOldin(q.createdAt)}` : ''}
+            </p>
           </div>
           <div className="text-right shrink-0">
             <p className="text-base font-bold text-ctext">{money(q.totalPrice)}</p>
@@ -190,6 +245,8 @@ export default function KassaTarix() {
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
   const [payQarz, setPayQarz]   = useState(null)
+  const [qarzSearch, setQarzSearch] = useState('')
+  const [qarzSort, setQarzSort]     = useState('yangi')
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
@@ -351,18 +408,29 @@ export default function KassaTarix() {
 
           {qarzlar.length === 0 ? <EmptyState text="Hozircha qarz yo'q" /> : (
             <>
-              {openQarz.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-text-sub uppercase tracking-wider px-1 pb-2">Ochiq qarzlar</p>
-                  {openQarz.map(q => <QarzCard key={q._id} q={q} onPay={setPayQarz} />)}
-                </div>
-              )}
-              {paidQarz.length > 0 && (
-                <div>
-                  <p className="text-xs font-bold text-text-sub uppercase tracking-wider px-1 pb-2">Yopilgan qarzlar</p>
-                  {paidQarz.map(q => <QarzCard key={q._id} q={q} onPay={setPayQarz} />)}
-                </div>
-              )}
+              <QarzSearchSort search={qarzSearch} onSearch={setQarzSearch} sort={qarzSort} onSort={setQarzSort} />
+              {(() => {
+                const openFiltered = filterSortQarz(openQarz, qarzSearch, qarzSort)
+                const paidFiltered = filterSortQarz(paidQarz, qarzSearch, qarzSort)
+                if (openFiltered.length === 0 && paidFiltered.length === 0)
+                  return <EmptyState text="Qidiruv bo'yicha hech narsa topilmadi" />
+                return (
+                  <>
+                    {openFiltered.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs font-bold text-text-sub uppercase tracking-wider px-1 pb-2">Ochiq qarzlar</p>
+                        {openFiltered.map(q => <QarzCard key={q._id} q={q} onPay={setPayQarz} />)}
+                      </div>
+                    )}
+                    {paidFiltered.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold text-text-sub uppercase tracking-wider px-1 pb-2">Yopilgan qarzlar</p>
+                        {paidFiltered.map(q => <QarzCard key={q._id} q={q} onPay={setPayQarz} />)}
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
             </>
           )}
         </>

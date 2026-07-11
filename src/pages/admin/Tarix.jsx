@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ShoppingCart, Trash2, Package, RefreshCw, ChevronDown, ChevronUp, HandCoins, Phone } from 'lucide-react'
+import { ShoppingCart, Trash2, Package, RefreshCw, ChevronDown, ChevronUp, HandCoins, Phone, Search } from 'lucide-react'
 import { api } from '../../lib/api'
 import { Badge, Spinner, EmptyState, ErrorMsg } from '../../components/ui'
 
@@ -10,6 +10,57 @@ const UZ_MONTHS = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust'
 function money(n) { return (n || 0).toLocaleString('ru-RU') }
 function formatBatchId(id = '') { return id.replace(/^BATCH-/, 'PARTIYA-') }
 function soat(d) { return new Date(d).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }
+function kunOldin(d) {
+  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000)
+  if (days <= 0) return 'Bugun'
+  if (days === 1) return 'Kecha'
+  return `${days} kun oldin`
+}
+// Qarzlarni ism/telefon bo'yicha qidirish + saralash
+function filterSortQarz(list, search, sort) {
+  const q = search.trim().toLowerCase()
+  const qDigits = search.replace(/\D/g, '')
+  let filtered = list
+  if (q) {
+    filtered = list.filter(x => {
+      const name  = (x.buyer?.name  || '').toLowerCase()
+      const phone = (x.buyer?.phone || '')
+      return name.includes(q) || (qDigits && phone.replace(/\D/g, '').includes(qDigits))
+    })
+  }
+  const sorted = [...filtered]
+  const qoldiq = x => x.totalPrice - x.paidAmount
+  if (sort === 'eski')      sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  else if (sort === 'kop')  sorted.sort((a, b) => qoldiq(b) - qoldiq(a))
+  else if (sort === 'kam')  sorted.sort((a, b) => qoldiq(a) - qoldiq(b))
+  else                      sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  return sorted
+}
+function QarzSearchSort({ search, onSearch, sort, onSort }) {
+  return (
+    <div className="flex gap-2 mb-3">
+      <div className="flex-1 flex items-center gap-2 bg-ccard border border-cborder rounded-xl px-3 h-10">
+        <Search size={14} className="text-text-sub shrink-0" />
+        <input
+          value={search}
+          onChange={e => onSearch(e.target.value)}
+          placeholder="Ism yoki telefon bo'yicha qidirish"
+          className="flex-1 bg-transparent text-sm text-ctext outline-none min-w-0"
+        />
+      </div>
+      <select
+        value={sort}
+        onChange={e => onSort(e.target.value)}
+        className="h-10 px-2.5 rounded-xl border border-cborder bg-ccard text-xs text-ctext outline-none shrink-0"
+      >
+        <option value="yangi">Yangi qarzlar</option>
+        <option value="eski">Eski (uzoq kutilmoqda)</option>
+        <option value="kop">Ko'p qarzdor</option>
+        <option value="kam">Kam qarzdor</option>
+      </select>
+    </div>
+  )
+}
 function dateKey(d) { const dt = new Date(d); return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}` }
 function dateLabel(d) {
   const dt = new Date(d), today = new Date(), yesterday = new Date()
@@ -195,8 +246,11 @@ function qarzFlowers(flowers = []) {
 
 function QarzlarTab({ list, sum }) {
   const [kassaF, setKassaF] = useState('hammasi')
+  const [search, setSearch] = useState('')
+  const [sort, setSort]     = useState('yangi')
   const byKassa = [...new Set(list.map(q => q.kassa?.name).filter(Boolean))]
-  const shown = kassaF === 'hammasi' ? list : list.filter(q => q.kassa?.name === kassaF)
+  const kassaFiltered = kassaF === 'hammasi' ? list : list.filter(q => q.kassa?.name === kassaF)
+  const shown = filterSortQarz(kassaFiltered, search, sort)
   const open  = shown.filter(q => !q.isPaid)
   const paid  = shown.filter(q => q.isPaid)
 
@@ -222,7 +276,9 @@ function QarzlarTab({ list, sum }) {
             <Phone size={12} /> {q.buyer?.phone}
           </a>
           <p className="text-sm text-text-sub mt-1">{qarzFlowers(q.flowers)}</p>
-          <p className="text-xs text-text-sub/60 mt-1">{q.kassa?.name || 'Kassa'} · {soat(q.createdAt)}</p>
+          <p className="text-xs text-text-sub/60 mt-1">
+            {q.kassa?.name || 'Kassa'} · {soat(q.createdAt)}{!q.isPaid ? ` · ${kunOldin(q.createdAt)}` : ''}
+          </p>
 
           {!q.isPaid && q.paidAmount > 0 && (
             <div className="mt-2">
@@ -271,7 +327,13 @@ function QarzlarTab({ list, sum }) {
         </div>
       )}
 
-      {shown.length === 0 ? <EmptyState text="Qarz yo'q" /> : (
+      {list.length > 0 && (
+        <QarzSearchSort search={search} onSearch={setSearch} sort={sort} onSort={setSort} />
+      )}
+
+      {list.length === 0 ? <EmptyState text="Qarz yo'q" /> : shown.length === 0 ? (
+        <EmptyState text="Qidiruv bo'yicha hech narsa topilmadi" />
+      ) : (
         <div className="space-y-4">
           {open.length > 0 && (
             <div>
