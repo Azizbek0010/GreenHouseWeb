@@ -132,9 +132,22 @@ function FlowerRow({ item, onChange, onRemove, canRemove }) {
       </div>
 
       {num(item.qty) > 0 && num(item.narx) > 0 && (
-        <div className="px-4 py-2.5 bg-blue-bg border-t border-separator flex items-center justify-between">
-          <span className="text-xs text-primary">{num(item.qty)} × {money(num(item.narx))}</span>
-          <span className="text-sm font-bold text-primary">{money(num(item.qty) * num(item.narx))} so'm</span>
+        <div className="px-4 py-2.5 bg-blue-bg border-t border-separator">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-primary">{num(item.qty)} × {money(num(item.narx))}</span>
+            <span className="text-sm font-bold text-primary">{money(num(item.qty) * num(item.narx))} so'm</span>
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-primary/20">
+            <span className="text-xs text-primary/70">Chegirma bilan (ixtiyoriy)</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={fmtInput(item.chegirma)}
+              onChange={e => update('chegirma', e.target.value.replace(/[\s\D]/g, ''))}
+              placeholder="Yakuniy narx"
+              className="w-32 text-right bg-transparent text-primary text-sm font-semibold outline-none placeholder:text-primary/40"
+            />
+          </div>
         </div>
       )}
     </div>
@@ -142,7 +155,12 @@ function FlowerRow({ item, onChange, onRemove, canRemove }) {
 }
 
 // ── Main ──────────────────────────────────────────────────────────
-const newItem = () => ({ id: Date.now() + Math.random(), type: '', razmer: null, qty: '', narx: '' })
+const newItem = () => ({ id: Date.now() + Math.random(), type: '', razmer: null, qty: '', narx: '', chegirma: '' })
+function itemTotal(it) {
+  const orig = num(it.qty) * num(it.narx)
+  const disc = num(it.chegirma)
+  return disc > 0 ? disc : orig
+}
 
 export default function QarzSotuv() {
   const navigate = useNavigate()
@@ -156,7 +174,7 @@ export default function QarzSotuv() {
   const removeItem = (id)          => setItems(prev => prev.filter(it => it.id !== id))
   const addItem    = ()            => setItems(prev => [...prev, newItem()])
 
-  const total    = items.reduce((s, it) => s + num(it.qty) * num(it.narx), 0)
+  const total    = items.reduce((s, it) => s + itemTotal(it), 0)
   const totalQty = items.reduce((s, it) => s + num(it.qty), 0)
 
   const onSave = async () => {
@@ -165,6 +183,8 @@ export default function QarzSotuv() {
       if (!it.razmer)          return setError('Razmerni tanlang')
       if (!(num(it.qty)  > 0)) return setError('Sonni kiriting')
       if (!(num(it.narx) > 0)) return setError('Narxni kiriting')
+      if (num(it.chegirma) > 0 && num(it.chegirma) > num(it.qty) * num(it.narx))
+        return setError("Chegirma narxi asl narxdan yuqori bo'lishi mumkin emas")
     }
     if (!buyerName.trim())     return setError('Sotib oluvchi ismini kiriting')
     if (buyerPhone.length !== 9) return setError("Telefon raqami to'liq emas: +998 dan keyin 9 ta raqam")
@@ -173,6 +193,7 @@ export default function QarzSotuv() {
     try {
       const flowers = items.map(it => ({
         type: it.type, razmer: it.razmer, qty: num(it.qty), pricePerUnit: num(it.narx),
+        discountPrice: num(it.chegirma) > 0 ? num(it.chegirma) : undefined,
       }))
       await api.post('/api/qarz', {
         flowers,
